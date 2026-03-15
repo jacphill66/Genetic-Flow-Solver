@@ -237,24 +237,18 @@ def select_new_population(population, pop_size, tournament_size=2, victor_size=1
             random_individual = random.choice(population)
             index = 0
             # Insert it in order (this assumes a simple fitness function using just the number of paths)
-            while individuals[index] != None and individuals[index][2] >= random_individual[2]:
-                index += 1
             
-            t = individuals[index] 
-            individuals[index] = random_individual
-            random_individual = t
-            
-            # Fix this mess
-            if random_individual != None:
-                index += 1
-                while index < len(individuals) and individuals[index] != None:
-                    t = individuals[index]
-                    individuals[index] = random_individual
-                    random_individual = t
-                    index += 1
-                if index < len(individuals):
-                    individuals[index] = random_individual
-                    
+            j = 0
+            while individuals[j] != None and individuals[j][2] >= random_individual[2]:
+                j += 1
+
+            while individuals[j]  != None:
+                t = individuals[j]
+                individuals[j] = random_individual[2]
+                j += 1
+
+            individuals[j] = random_individual[2]
+                                
         for i in range(0, victor_size):
             new_pop[new_pop_size + i] = individuals.pop()
         new_pop_size += victor_size
