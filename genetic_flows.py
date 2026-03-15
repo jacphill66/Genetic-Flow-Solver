@@ -206,7 +206,7 @@ def remove_path(flow_network, path, weight):
 def fitness():
     pass
 
-def mutate_decomposition(flow_network, decomposition, mutation_strength=2):
+def mutate_decomposition(flow_network, decomposition, mutation_strength=2, smart_mutation=False):
     if len(decomposition) < mutation_strength:
         raise Exception("The Size of the Decomposition Must be >= Mutation Strengh!")
     if mutation_strength < 2:
@@ -214,8 +214,14 @@ def mutate_decomposition(flow_network, decomposition, mutation_strength=2):
     for i in range(0, mutation_strength):
         p, w = decomposition.pop()
         remove_path(flow_network, p, w)
-    d, num_paths = randomly_decompose_flow(flow_network, weighted_paths=decomposition, copy_network=False)
-    return flow_network, decomposition, len(decomposition)+num_paths
+    d = None
+    num_paths = None
+    
+    if smart_mutation:
+        d, num_paths = randomly_decompose_flow(flow_network, weighted_paths=decomposition, copy_network=False)
+    else:
+        d, num_paths = greedily_decompose_flow(flow_network, weighted_paths=decomposition, copy_network=False)
+    return flow_network, d, len(decomposition)+num_paths
 
 def select_new_population(population, pop_size, tournament_size=2, victor_size=1):
     new_pop = []
@@ -257,8 +263,12 @@ def select_new_population(population, pop_size, tournament_size=2, victor_size=1
 def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0):
     pop = generate_decompositions(flow_network, pop_size, random_percentage)
     
+    min_paths = pop[0][2]
     avg = 0
     for p in pop:
+        if p[2] < min_paths:
+            min_paths = p[2]
+            print(f"New Min Found:{p[2]}")
         avg += p[2]
     print(f"Average Paths {avg/pop_size} for Generation: {0}")
         
@@ -271,11 +281,13 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
 
         avg = 0
         for p in pop:
+            if p[2] < min_paths:
+                min_paths = p[2]
+                print(f"New Min Found:{p[2]}")
             avg += p[2]
         print(f"Average Paths {avg/pop_size} for Generation: {i+1}")
-
+    print(f"Minimum Paths: {min_paths}")
     return pop
-    
     
 def cross_over():
     # pick one path at a time from each flow up until the crossover percentage is met
@@ -334,6 +346,21 @@ if __name__ == "__main__":
         241 0 4 5 6 7 8 9 10 11 12 15 19 20 21 22 25 28 31 32 33 36 
         1 0 4 5 6 7 8 9 10 11 12 15 16 17 19 20 21 22 25 28 31 32 33 36 
     """
-   
+
+    truths = """
+        725 0 1 2 4 5 6 7 8 9 10 11 12 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 43 44 45 46 
+        66 0 3 4 5 6 7 8 9 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 29 32 34 35 36 46 
+        253 0 19 20 21 22 23 24 25 26 27 28 29 40 41 46 
+        690 0 21 22 23 24 25 26 27 29 32 33 35 46 
+        2 0 22 23 24 25 26 27 28 29 33 34 35 36 37 38 46 
+        799 0 23 24 25 26 27 28 29 32 39 46 
+        1000 0 24 25 26 27 29 30 31 34 35 36 37 44 46 
+        470 0 26 27 28 29 30 31 33 34 35 36 37 38 46 
+        793 0 31 32 33 34 35 36 37 40 42 46 
+    """
+
+    # fix the selection stuff, maybe it's wrong
     flow = initialize_flow(truths)
-    res = evolve(flow, 1000, 100)
+    res = evolve(flow, 1000, 100, tournament_size=2, victor_size=1, mutation_chance=0.01, mutation_strength=5, random_percentage=-1.0)
+    
+    # could compare to greedy width

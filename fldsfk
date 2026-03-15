@@ -1,0 +1,164 @@
+ exit()
+    decomps = generate_decompositions(flow, 100, random_percentage=1.0)
+    decomp_sizes = {}
+    for d in decomps:
+        if not d[1] in decomp_sizes:
+            decomp_sizes[d[2]] = 1
+        else:
+            decomp_sizes[d[2]] += 1
+            
+    print(decomp_sizes)
+    
+    # print(decomps)
+    # print(len(decomps))
+    exit()
+    for d in decomps:
+        print(d)
+    exit()
+    decomposition, num_paths = decompose_flow(flow)
+        # print(decomposition, num_paths)
+    print(num_paths, decomposition)
+    print("Done")
+    # 
+        
+    # Params:
+    # mutation chance
+    # crossover
+    # ensure there are a lot of params to try
+    # look at the time complexity of this approach
+    # I think it's poly time
+    
+# number of paths is wrong
+# weights are wrong
+
+
+"""
+Tomorrow:
+    Use random choice as the decomposition operation (random_decomp vs greedy_decomp)
+        - only allow valid decomps and use a flow bounded by the minimum edge
+    Implement crossover:
+        - still need to figure it out
+        - pick n flows and have a tournament
+        - pick one path from each flow until the flow is satisfied
+        - potentially decompose the rest of the graph after the crossover paths are involved
+        - many of these things could be options/params
+        
+    Implement mutation:
+        - remove 2+ paths from the decomposition, num paths is probable a param
+        - decompose the rest of the graphs
+    
+    - Both mutation and crossover should have a chance
+   
+    - I can do random decompositions and mutation
+    - do those and see how everything performs
+   
+"""
+
+
+
+git remote add origin https://github.com/jacphill66/Genetic-Flow-Solver.git
+
+
+
+C:\Users\phill\Desktop\Evo>python genetic_flows.py
+Average Paths 14.027 for Generation: 0
+Average Paths 13.638 for Generation: 1
+Average Paths 13.263 for Generation: 2
+Average Paths 12.903 for Generation: 3
+Average Paths 12.574 for Generation: 4
+Average Paths 12.294 for Generation: 5
+Average Paths 12.081 for Generation: 6
+Average Paths 11.967 for Generation: 7
+Average Paths 11.825 for Generation: 8
+Average Paths 11.67 for Generation: 9
+Average Paths 11.524 for Generation: 10
+Average Paths 11.377 for Generation: 11
+Average Paths 11.222 for Generation: 12
+Average Paths 11.104 for Generation: 13
+Average Paths 11.085 for Generation: 14
+Average Paths 11.045 for Generation: 15
+Average Paths 11.027 for Generation: 16
+Average Paths 11.052 for Generation: 17
+Average Paths 11.05 for Generation: 18
+Average Paths 11.098 for Generation: 19
+Average Paths 11.04 for Generation: 20
+Average Paths 11.066 for Generation: 21
+Average Paths 11.078 for Generation: 22
+Average Paths 11.06 for Generation: 23
+Average Paths 11.054 for Generation: 24
+Average Paths 11.046 for Generation: 25
+Average Paths 11.044 for Generation: 26
+Average Paths 11.038 for Generation: 27
+Average Paths 11.07 for Generation: 28
+Average Paths 11.082 for Generation: 29
+Average Paths 11.04 for Generation: 30
+Average Paths 11.028 for Generation: 31
+Average Paths 11.052 for Generation: 32
+Average Paths 11.094 for Generation: 33
+Average Paths 11.077 for Generation: 34
+Average Paths 11.086 for Generation: 35
+Average Paths 11.056 for Generation: 36
+Average Paths 11.064 for Generation: 37
+Average Paths 11.076 for Generation: 38
+Average Paths 11.05 for Generation: 39
+Average Paths 11.042 for Generation: 40
+Average Paths 11.056 for Generation: 41
+Average Paths 11.088 for Generation: 42
+Average Paths 11.091 for Generation: 43
+Average Paths 11.115 for Generation: 44
+Average Paths 11.048 for Generation: 45
+Average Paths 11.044 for Generation: 46
+Average Paths 11.04 for Generation: 47
+Average Paths 11.06 for Generation: 48
+Average Paths 11.076 for Generation: 49
+Average Paths 11.068 for Generation: 50
+Average Paths 11.048 for Generation: 51
+Average Paths 11.034 for Generation: 52
+Average Paths 11.102 for Generation: 53
+Average Paths 11.098 for Generation: 54
+Average Paths 11.058 for Generation: 55
+Average Paths 11.088 for Generation: 56
+Average Paths 11.102 for Generation: 57
+Average Paths 11.042 for Generation: 58
+Average Paths 11.058 for Generation: 59
+Average Paths 11.086 for Generation: 60
+Average Paths 11.118 for Generation: 61
+Average Paths 11.052 for Generation: 62
+Average Paths 11.062 for Generation: 63
+Average Paths 11.064 for Generation: 64
+Average Paths 11.115 for Generation: 65
+Average Paths 11.064 for Generation: 66
+Average Paths 11.056 for Generation: 67
+Average Paths 11.073 for Generation: 68
+Average Paths 11.122 for Generation: 69
+Average Paths 11.064 for Generation: 70
+Average Paths 11.052 for Generation: 71
+Average Paths 11.028 for Generation: 72
+Average Paths 11.054 for Generation: 73
+Average Paths 11.054 for Generation: 74
+Average Paths 11.05 for Generation: 75
+Average Paths 11.04 for Generation: 76
+Average Paths 11.026 for Generation: 77
+Average Paths 11.042 for Generation: 78
+Average Paths 11.058 for Generation: 79
+Average Paths 11.036 for Generation: 80
+Average Paths 11.044 for Generation: 81
+Average Paths 11.104 for Generation: 82
+Average Paths 11.112 for Generation: 83
+Average Paths 11.048 for Generation: 84
+Average Paths 11.04 for Generation: 85
+Average Paths 11.074 for Generation: 86
+Average Paths 11.036 for Generation: 87
+Average Paths 11.084 for Generation: 88
+Average Paths 11.062 for Generation: 89
+Average Paths 11.036 for Generation: 90
+Average Paths 11.068 for Generation: 91
+Average Paths 11.1 for Generation: 92
+Average Paths 11.056 for Generation: 93
+Average Paths 11.068 for Generation: 94
+Average Paths 11.052 for Generation: 95
+Average Paths 11.066 for Generation: 96
+Average Paths 11.07 for Generation: 97
+Average Paths 11.056 for Generation: 98
+Average Paths 11.032 for Generation: 99
+Average Paths 11.022 for Generation: 100
