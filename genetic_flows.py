@@ -40,7 +40,7 @@ def initialize_flow(ground_truths, min_flow=1, max_flow=100, check_if_valid=Fals
     """
     Takes a description of a flow network. Currently, a set of ground truth paths and generates a flow graph based on them.
     """
-    paths = parse_ground_truths(truths)
+    paths = parse_ground_truths(ground_truths)
     flow = build_flow_from_ground_truths(paths[0], min_flow, max_flow, weights)
     
     if check_if_valid:
@@ -212,7 +212,8 @@ def mutate_decomposition(flow_network, decomposition, mutation_strength=2, smart
     if mutation_strength < 2:
         raise Exception("Mutation Strength Must be >= 2!")
     for i in range(0, mutation_strength):
-        p, w = decomposition.pop()
+        # p, w = decomposition.pop()
+        p, w = decomposition.pop(random.randrange(len(decomposition)))
         remove_path(flow_network, p, w)
     d = None
     num_paths = None
@@ -260,7 +261,7 @@ def select_new_population(population, pop_size, tournament_size=2, victor_size=1
         new_pop_size += victor_size
     return new_pop   
     
-def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0):
+def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0, smart_mutate=False):
     pop = generate_decompositions(flow_network, pop_size, random_percentage)
     
     min_paths = pop[0][2]
@@ -271,12 +272,12 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
             print(f"New Min Found:{p[2]}")
         avg += p[2]
     print(f"Average Paths {avg/pop_size} for Generation: {0}")
-        
+    og_avg = avg/pop_size
     for i in range(0, generations):
         for j in range(0, len(pop)):
             if random.random() < mutation_chance:
                 x = copy.deepcopy(pop[j])
-                pop[j] = mutate_decomposition(x[0], x[1], mutation_strength)
+                pop[j] = mutate_decomposition(x[0], x[1], mutation_strength, smart_mutate)
         pop = select_new_population(pop, pop_size, tournament_size, victor_size)    
 
         avg = 0
@@ -287,7 +288,8 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
             avg += p[2]
         print(f"Average Paths {avg/pop_size} for Generation: {i+1}")
     print(f"Minimum Paths: {min_paths}")
-    return pop
+    print(f"Improvement:{og_avg-min_paths}")
+    return pop, min_paths
     
 def cross_over():
     # pick one path at a time from each flow up until the crossover percentage is met
@@ -326,13 +328,13 @@ def validate_decomposition():
     pass
 
 if __name__ == "__main__":
-    truths = """
+    truths_1 = """
         105 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
         132 0 2 3 4 5 6 7 8 9 10 11 12 13 14 16 17 19 21 22 25 
         393 0 3 4 5 6 7 8 9 10 11 12 13 14 16 17 18 19 21 22 23 25 
     """
     
-    truths = """
+    truths_2 = """
         46 0 1 2 3 4 5 6 7 8 9 10 11 14 15 16 19 21 22 25 28 31 32 33 36 
         93 0 1 2 3 4 5 6 7 8 9 10 11 12 15 16 19 21 22 25 28 29 30 31 32 33 36 
         580 0 1 2 3 4 5 6 7 8 9 10 11 12 15 16 19 21 22 25 26 27 28 31 32 33 34 36 
@@ -347,7 +349,7 @@ if __name__ == "__main__":
         1 0 4 5 6 7 8 9 10 11 12 15 16 17 19 20 21 22 25 28 31 32 33 36 
     """
 
-    truths = """
+    truths_3 = """
         725 0 1 2 4 5 6 7 8 9 10 11 12 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 36 37 43 44 45 46 
         66 0 3 4 5 6 7 8 9 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 29 32 34 35 36 46 
         253 0 19 20 21 22 23 24 25 26 27 28 29 40 41 46 
@@ -359,8 +361,18 @@ if __name__ == "__main__":
         793 0 31 32 33 34 35 36 37 40 42 46 
     """
 
-    # fix the selection stuff, maybe it's wrong
-    flow = initialize_flow(truths)
-    res = evolve(flow, 1000, 100, tournament_size=2, victor_size=1, mutation_chance=0.01, mutation_strength=5, random_percentage=-1.0)
+    # Params to play around with
+    weights = None     # Weights must be None or a list of integers whose length = # ground truth paths
+    population = 100   # Number of initial solutions to consider
+    generations = 100  # Number of generations
+    mutation_chance=0.1 # chance of mutating a solution
+    mutation_strength=3 # How strong is a mutation (must be greater than 2 and less than # of ground truth paths)
+
     
-    # could compare to greedy width
+    flow = initialize_flow(truths_1, weights=weights)
+    greedy_decomposition, path_count = greedily_decompose_flow(flow, copy_network=True)
+    
+    res, min_paths = evolve(flow, population, generations, tournament_size=2, victor_size=1, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=-1.0, smart_mutate=False)
+    
+    print(f"Our Algo: {min_paths}, Greedy Decomp: {path_count}")
+    
