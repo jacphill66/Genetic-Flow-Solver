@@ -206,12 +206,11 @@ def remove_path(flow_network, path, weight):
 def fitness():
     pass
 
-def mutate_decomposition(flow_network, decomposition, mutation_strength=2, smart_mutation=False):
+def mutate_decomposition(flow_network, decomposition, mutation_strength=0.1, smart_mutation=False):
     if len(decomposition) < mutation_strength:
         raise Exception("The Size of the Decomposition Must be >= Mutation Strengh!")
-    if mutation_strength < 2:
-        raise Exception("Mutation Strength Must be >= 2!")
-    for i in range(0, mutation_strength):
+    number_of_paths = int(mutation_strength * len(decomposition))
+    for i in range(0, number_of_paths):
         # p, w = decomposition.pop()
         p, w = decomposition.pop(random.randrange(len(decomposition)))
         remove_path(flow_network, p, w)
@@ -271,6 +270,7 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
             min_paths = p[2]
             print(f"New Min Found:{p[2]}")
         avg += p[2]
+    og_min_paths = min_paths
     print(f"Average Paths {avg/pop_size} for Generation: {0}")
     og_avg = avg/pop_size
     for i in range(0, generations):
@@ -289,6 +289,7 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
         print(f"Average Paths {avg/pop_size} for Generation: {i+1}")
     print(f"Minimum Paths: {min_paths}")
     print(f"Improvement:{og_avg-min_paths}")
+    print(f"Improvements from Initial Population:{og_min_paths-min_paths}")
     return pop, min_paths
     
 def cross_over():
@@ -363,16 +364,29 @@ if __name__ == "__main__":
 
     # Params to play around with
     weights = None     # Weights must be None or a list of integers whose length = # ground truth paths
-    population = 100   # Number of initial solutions to consider
+    population = 1000   # Number of initial solutions to consider
     generations = 100  # Number of generations
     mutation_chance=0.1 # chance of mutating a solution
-    mutation_strength=3 # How strong is a mutation (must be greater than 2 and less than # of ground truth paths)
+    mutation_strength=0.4 # How strong is a mutation (percentage of paths mutated)
 
     
-    flow = initialize_flow(truths_1, weights=weights)
+    flow = initialize_flow(truths_3, weights=weights)
     greedy_decomposition, path_count = greedily_decompose_flow(flow, copy_network=True)
     
     res, min_paths = evolve(flow, population, generations, tournament_size=2, victor_size=1, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=-1.0, smart_mutate=False)
     
     print(f"Our Algo: {min_paths}, Greedy Decomp: {path_count}")
-    
+
+"""
+the population is improving, but its really just being dominated by the best individuals
+the best solution isn't improving
+
+Things to work on:
+better diversify the population
+add crossover
+make mutation better
+prevent early convergence
+ensure more diversity
+fix/optimize selection
+check everything works
+"""
