@@ -206,11 +206,13 @@ def remove_path(flow_network, path, weight):
 def fitness():
     pass
 
-def mutate_decomposition(flow_network, decomposition, mutation_strength=0.1, smart_mutation=False):
-    if len(decomposition) < mutation_strength:
-        raise Exception("The Size of the Decomposition Must be >= Mutation Strengh!")
-    number_of_paths = int(mutation_strength * len(decomposition))
-    for i in range(0, number_of_paths):
+def mutate_decomposition(flow_network, decomposition, mutation_strength=2, smart_mutation=False):
+    num_paths_to_mutate = int(mutation_strength * len(decomposition))
+    if len(decomposition) < num_paths_to_mutate:
+        raise Exception("The Size of the Decomposition Must be >= Mutation Strength. Use a Higher Mutation Strength!")        
+    if num_paths_to_mutate < 2:
+        raise Exception("Number of Paths to Mutate is Less Than Two. Use a Higher Mutation Strength!")
+    for i in range(0, num_paths_to_mutate):
         # p, w = decomposition.pop()
         p, w = decomposition.pop(random.randrange(len(decomposition)))
         remove_path(flow_network, p, w)
@@ -223,11 +225,13 @@ def mutate_decomposition(flow_network, decomposition, mutation_strength=0.1, sma
         d, num_paths = greedily_decompose_flow(flow_network, weighted_paths=decomposition, copy_network=False)
     return flow_network, d, len(decomposition)+num_paths
 
-def select_new_population(population, pop_size, tournament_size=2, victor_size=1):
+def select_new_population(population, pop_size, tournament_size=2, victor_size=1, mutation_strength=0.2, mutation_chance=0.1, smart_mutate=False):
     new_pop = []
     for i in range(0, pop_size):
         new_pop.append(None)
     new_pop_size = 0
+    total = 0
+    generation_min_paths = float('inf')
     while new_pop_size < pop_size:
         individuals = []
         for i in range(0, tournament_size):
@@ -235,55 +239,63 @@ def select_new_population(population, pop_size, tournament_size=2, victor_size=1
                 
         for i in range(0, tournament_size):
             random_individual = random.choice(population)
-            index = 0
-            # Insert it in order (this assumes a simple fitness function using just the number of paths)
-            
             j = 0
             while individuals[j] != None and individuals[j][2] >= random_individual[2]:
                 j += 1
 
-            while individuals[j]  != None:
+            while individuals[j] != None:
                 t = individuals[j]
-                individuals[j] = random_individual[2]
+                individuals[j] = random_individual
+                random_individual = t
                 j += 1
 
-            individuals[j] = random_individual[2]
-                                
+            individuals[j] = random_individual
+                    
         for i in range(0, victor_size):
             new_pop[new_pop_size + i] = individuals.pop()
-        new_pop_size += victor_size
-    return new_pop   
+            total += new_pop[new_pop_size + i][2]
+            
+            if new_pop[new_pop_size + i][2] < generation_min_paths:
+                generation_min_paths = new_pop[new_pop_size + i][2]
     
-def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0, smart_mutate=False):
+            if random.random() < mutation_chance:
+                new_pop[j] = mutate_decomposition(new_pop[i][0], new_pop[i][1], mutation_strength, smart_mutate)
+            
+        new_pop_size += victor_size
+    return new_pop, generation_min_paths, (total/new_pop_size)
+    
+def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0, smart_mutate=False, full_console=False, min_console=False):
     pop = generate_decompositions(flow_network, pop_size, random_percentage)
     
     min_paths = pop[0][2]
     avg = 0
+    
     for p in pop:
         if p[2] < min_paths:
             min_paths = p[2]
-            print(f"New Min Found:{p[2]}")
         avg += p[2]
     og_min_paths = min_paths
-    print(f"Average Paths {avg/pop_size} for Generation: {0}")
+    if full_console or min_console:
+        print(f"New Min Found:{p[2]}")
     og_avg = avg/pop_size
+    if full_console:
+        print(f"Average Paths {og_avg} for Generation: {0}")
+    
     for i in range(0, generations):
-        for j in range(0, len(pop)):
-            if random.random() < mutation_chance:
-                x = copy.deepcopy(pop[j])
-                pop[j] = mutate_decomposition(x[0], x[1], mutation_strength, smart_mutate)
-        pop = select_new_population(pop, pop_size, tournament_size, victor_size)    
-
-        avg = 0
-        for p in pop:
-            if p[2] < min_paths:
-                min_paths = p[2]
-                print(f"New Min Found:{p[2]}")
-            avg += p[2]
-        print(f"Average Paths {avg/pop_size} for Generation: {i+1}")
-    print(f"Minimum Paths: {min_paths}")
-    print(f"Improvement:{og_avg-min_paths}")
-    print(f"Improvements from Initial Population:{og_min_paths-min_paths}")
+        pop, gen_min_paths, avg = select_new_population(pop, pop_size, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, smart_mutate=smart_mutate)
+            
+        if (full_console or min_console) and gen_min_paths < min_paths:
+            min_paths = gen_min_paths
+            print(f"New Minimum Found: {min_paths}!")
+            
+        if full_console:
+            print(f"Average Paths {avg} for Generation: {i+1}")
+            
+    if full_console or min_console:
+        print(f"Final Min: {min_paths}")
+        print(f"Improvement:{og_avg-min_paths}")
+        print(f"Improvements from Initial Population:{og_min_paths-min_paths}")
+    
     return pop, min_paths
     
 def cross_over():
@@ -356,31 +368,21 @@ if __name__ == "__main__":
         793 0 31 32 33 34 35 36 37 40 42 46 
     """
 
-    # Params to play around with
-    weights = None     # Weights must be None or a list of integers whose length = # ground truth paths
-    population = 1000   # Number of initial solutions to consider
-    generations = 100  # Number of generations
-    mutation_chance=0.1 # chance of mutating a solution
-    mutation_strength=0.4 # How strong is a mutation (percentage of paths mutated)
-
+    weights = None
+    population = 1000
+    generations = 100
+    mutation_chance=0.1
+    mutation_strength=0.6
+    random_percentage = -1.0
+    smart_mutate=True
+    full_console = True
+    min_console = True
+    tournament_size=5
+    victor_size=1
     
     flow = initialize_flow(truths_3, weights=weights)
     greedy_decomposition, path_count = greedily_decompose_flow(flow, copy_network=True)
     
-    res, min_paths = evolve(flow, population, generations, tournament_size=2, victor_size=1, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=-1.0, smart_mutate=False)
+    res, min_paths = evolve(flow, population, generations, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=random_percentage, smart_mutate=smart_mutate, full_console=full_console, min_console=min_console)
     
     print(f"Our Algo: {min_paths}, Greedy Decomp: {path_count}")
-
-"""
-the population is improving, but its really just being dominated by the best individuals
-the best solution isn't improving
-
-Things to work on:
-better diversify the population
-add crossover
-make mutation better
-prevent early convergence
-ensure more diversity
-fix/optimize selection
-check everything works
-"""
