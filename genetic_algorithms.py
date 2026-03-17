@@ -99,11 +99,11 @@ def evolve(pop_size, generations, mutation_rate=0.1, crossover_rate=0.75, tourna
                 victors.append(competitors.pop())
             
             k = 0
-            while k < len(victors)-1:
+            while k < len(victors)-1 and j < pop_size:
                 new_pop[j] = victors[k]
                 j += 1
                 
-                if random.random() < crossover_rate:
+                if j < pop_size and random.random() < crossover_rate:
                     new_pop[j] = crossover(victors[k], victors[k+1])
                     j += 1
                     
@@ -111,8 +111,7 @@ def evolve(pop_size, generations, mutation_rate=0.1, crossover_rate=0.75, tourna
                     new_pop[j] = mutate(victors[k])
                 
                 k += 1           
-        print(new_pop)
-        exit()
+
         board, f = find_best_in_pop(new_pop)
         print(f"Best Fitness: {f} at Generation: {i}")
           
