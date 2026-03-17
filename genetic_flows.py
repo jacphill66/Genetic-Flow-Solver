@@ -111,7 +111,7 @@ def greedily_decompose_flow(flow_network, weighted_paths=None, copy_network=True
     # It should return midway through when the flow is decomposed or invalid
     raise Exception("Shouldn't be Here!")
 
-def take_random_path(flow_network):
+def take_random_path(flow_network, max_weight=True):
     # Flow network is assumed to be a copy; this mutates the graph's flow values
     current_source = '0'
     sink = str(len(flow_network.nodes)-1)
@@ -148,6 +148,9 @@ def take_random_path(flow_network):
         # Move onto the next edge
         current_source = v
             
+        if not max_weight:    
+            curr_path_weight = random.randint(1, curr_path_weight)
+            
         # If the current path is complete (source-to-sink) adjust the network
         if current_source == sink:  
             
@@ -157,7 +160,7 @@ def take_random_path(flow_network):
             
             return path, curr_path_weight
 
-def randomly_decompose_flow(flow_network, weighted_paths=None, copy_network=True):
+def randomly_decompose_flow(flow_network, max_weight=True, weighted_paths=None, copy_network=True):
     """
     Decomposes a network flow using a version of greedy width. We may change this to a more efficient solution.
     """
@@ -170,7 +173,7 @@ def randomly_decompose_flow(flow_network, weighted_paths=None, copy_network=True
     curr_path_weight = float('inf')
     current_path = []
     while True:   
-        path, weight = take_random_path(flow_network)
+        path, weight = take_random_path(flow_network, max_weight=max_weight)
         if path == None:
             return weighted_paths, path_count
             
@@ -180,7 +183,7 @@ def randomly_decompose_flow(flow_network, weighted_paths=None, copy_network=True
     # It should return midway through when the flow is decomposed or invalid
     raise Exception("Shouldn't be Here!")
     
-def generate_decompositions(flow_network, quantity, random_percentage=-1.0):
+def generate_decompositions(flow_network, quantity, max_weight=True, random_percentage=-1.0):
     decomps = []
     
     count = 0
@@ -194,7 +197,7 @@ def generate_decompositions(flow_network, quantity, random_percentage=-1.0):
             num_paths += 1
             decomps.append((flow_copy, decomposition, num_paths))
         else:
-            decomposition, num_paths = randomly_decompose_flow(flow_copy, copy_network=False)
+            decomposition, num_paths = randomly_decompose_flow(flow_copy, max_weight=max_weight, copy_network=False)
             decomps.append((flow_copy, decomposition, num_paths))
         count += 1
     return decomps
@@ -225,14 +228,16 @@ def mutate_decomposition(flow_network, decomposition, mutation_strength=2, smart
         d, num_paths = greedily_decompose_flow(flow_network, weighted_paths=decomposition, copy_network=False)
     return flow_network, d, len(decomposition)+num_paths
 
-def select_new_population(population, pop_size, tournament_size=2, victor_size=1, mutation_strength=0.2, mutation_chance=0.1, smart_mutate=False):
+def select_new_population(population, pop_size, og_network, tournament_size=2, victor_size=1, mutation_strength=0.2, mutation_chance=0.1, smart_mutate=False, factor_f=0.1, max_weight=True):
     new_pop = []
     for i in range(0, pop_size):
         new_pop.append(None)
     new_pop_size = 0
     total = 0
     generation_min_paths = float('inf')
-    while new_pop_size < pop_size:
+    random_individual_count = int(pop_size * factor_f)
+    full = pop_size - random_individual_count
+    while new_pop_size < full:
         individuals = []
         for i in range(0, tournament_size):
             individuals.append(None)
@@ -257,14 +262,30 @@ def select_new_population(population, pop_size, tournament_size=2, victor_size=1
             
             if new_pop[new_pop_size + i][2] < generation_min_paths:
                 generation_min_paths = new_pop[new_pop_size + i][2]
-    
+                if generation_min_paths == 0:
+                    print("here1")
+                    print(new_pop[new_pop_size + i][2])
+                    exit()
             if random.random() < mutation_chance:
                 new_pop[j] = mutate_decomposition(new_pop[i][0], new_pop[i][1], mutation_strength, smart_mutate)
             
         new_pop_size += victor_size
+    
+    while new_pop_size < pop_size:
+        decomposition, num_paths = randomly_decompose_flow(og_network, max_weight=max_weight, copy_network=True)
+        new_pop[new_pop_size] = (og_network, decomposition, num_paths)
+        
+        total += new_pop[new_pop_size][2]
+        if new_pop[new_pop_size + i][2] < generation_min_paths:
+            generation_min_paths = new_pop[new_pop_size + i][2]
+            if generation_min_paths == 0:
+                    print("here2")
+                    print(new_pop[new_pop_size + i][2])
+                    exit()
+        new_pop_size += 1
     return new_pop, generation_min_paths, (total/new_pop_size)
     
-def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0, smart_mutate=False, full_console=False, min_console=False):
+def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1, mutation_chance=0.1, mutation_strength=2, random_percentage=-1.0, smart_mutate=False, full_console=False, min_console=False, factor_f=0.1, max_weights=True):
     pop = generate_decompositions(flow_network, pop_size, random_percentage)
     
     min_paths = pop[0][2]
@@ -276,13 +297,13 @@ def evolve(flow_network, pop_size, generations, tournament_size=2, victor_size=1
         avg += p[2]
     og_min_paths = min_paths
     if full_console or min_console:
-        print(f"New Min Found:{p[2]}")
+        print(f"Min Found:{og_min_paths}")
     og_avg = avg/pop_size
     if full_console:
         print(f"Average Paths {og_avg} for Generation: {0}")
     
     for i in range(0, generations):
-        pop, gen_min_paths, avg = select_new_population(pop, pop_size, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, smart_mutate=smart_mutate)
+        pop, gen_min_paths, avg = select_new_population(pop, pop_size, flow_network, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, smart_mutate=smart_mutate, max_weight=max_weights)
             
         if (full_console or min_console) and gen_min_paths < min_paths:
             min_paths = gen_min_paths
@@ -377,12 +398,14 @@ if __name__ == "__main__":
     smart_mutate=True
     full_console = True
     min_console = True
-    tournament_size=5
+    tournament_size=2
     victor_size=1
+    factor_f = 0.1
+    max_weights = True
     
     flow = initialize_flow(truths_3, weights=weights)
     greedy_decomposition, path_count = greedily_decompose_flow(flow, copy_network=True)
     
-    res, min_paths = evolve(flow, population, generations, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=random_percentage, smart_mutate=smart_mutate, full_console=full_console, min_console=min_console)
+    res, min_paths = evolve(flow, population, generations, tournament_size=tournament_size, victor_size=victor_size, mutation_chance=mutation_chance, mutation_strength=mutation_strength, random_percentage=random_percentage, smart_mutate=smart_mutate, full_console=full_console, min_console=min_console, factor_f = factor_f, max_weights=max_weights)
     
     print(f"Our Algo: {min_paths}, Greedy Decomp: {path_count}")
