@@ -69,24 +69,26 @@ def mutate(board):
 
 def crossover(b1, b2):
     new_board = []
-    new_board.append(b1[0][:])
-    new_board.append(b1[1][:])
-    new_board.append(b1[2][:])
-    new_board.append(b1[3][:])
-    new_board.append(b1[4][:])
-    new_board.append(b2[5][:])
-    new_board.append(b2[6][:])
-    new_board.append(b2[7][:])
-    new_board.append(b2[8][:])
+    splitting_index = random.choice([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    for i in range(0, splitting_index):
+        new_board.append(b1.pop(random.randrange(0, len(b1))))
+        
+    for i in range(splitting_index, 9):
+        new_board.append(b2.pop(random.randrange(splitting_index, len(b2))))
     return new_board
     
-def evolve(pop_size, generations, mutation_rate=0.1, crossover_rate=0.75, tournament_size=5, victor_size=3):
+def evolve(pop_size, generations, mutation_rate=0.1, crossover_rate=0.9, tournament_size=5, victor_size=3):
     pop = sorted(generate_initial_population(pop_size), key=fitness)
     # Sort the population by fitness
 
     for i in range(0, generations):
         new_pop = [None] * pop_size
-        
+        """
+        j = 0
+        while j < int(pop_size*.10):
+            new_pop[j] = pop
+            j += 1
+        """
         j = 0
         while j < pop_size:
             competitors = []
@@ -108,11 +110,12 @@ def evolve(pop_size, generations, mutation_rate=0.1, crossover_rate=0.75, tourna
                 j += 1
                 
                 if j < pop_size and random.random() < crossover_rate:
-                    new_pop[j] = crossover(victors[k], victors[k+1])
+                    new_pop[j] = crossover(copy.deepcopy(victors[k]), copy.deepcopy(victors[k+1]))
                     j += 1
                     
                 k += 1           
-
+        pop = new_pop
+        
         board, f = find_best_in_pop(new_pop)
         print(f"Best Fitness: {f} at Generation: {i}")
           
